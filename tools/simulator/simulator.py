@@ -1,19 +1,17 @@
 import random
 import uuid
-from time import sleep
-from typing import Dict
 from datetime import datetime as DateTime
+from typing import Dict
 
 import requests
+from requests.auth import HTTPBasicAuth
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 last_result = 10
 
-#url_stub = "http://connected-systems.docker.srv.int.52north.org"
+# url_stub = "http://connected-systems.docker.srv.int.52north.org"
 url_stub = "http://localhost:5000"
 num_of_obs_to_insert = 1_000_000
-
 
 THREAD_POOL = 16
 
@@ -26,11 +24,15 @@ session.mount(
                                   pool_block=True)
 )
 
+
 def post(path: str, payload: dict, content_type: str = "application/json"):
     url = url_stub + path
     headers = {"Content-Type": content_type}
-    response = requests.request("POST", url, json=payload, headers=headers)
-    # print(response.text)
+    basic = HTTPBasicAuth('test', 'test')
+    response = requests.request("POST", url, json=payload, headers=headers, auth=basic)
+    if response.status_code != 201:
+        print(response)
+        print(response.text)
 
 
 def gen_observation(datastream_id: str) -> dict:
@@ -183,6 +185,6 @@ def run():
 
 
 if __name__ == "__main__":
-    #import cProfile
-    #cProfile.run('run()')
+    # import cProfile
+    # cProfile.run('run()')
     run()
