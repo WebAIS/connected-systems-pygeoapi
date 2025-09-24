@@ -20,7 +20,7 @@ quart-auth
 
 aiohttp
 elasticsearch
-elasticsearch-dsl
+elasticsearch-dsl~=8.18.0
 asyncpg
 
 orjson
