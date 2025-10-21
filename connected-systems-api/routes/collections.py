@@ -1,5 +1,8 @@
 from http import HTTPStatus
 
+import pygeoapi.api as core_api
+import pygeoapi.api.itemtypes as itemtypes_api
+import pygeoapi.api.tiles as tiles_api
 from pygeoapi.flask_app import api_, CONFIG
 from pygeoapi.util import filter_dict_by_key_value
 from quart import request, Blueprint
@@ -22,29 +25,29 @@ async def all_collections(collection_id: str = None):
     :returns: HTTP response
     """
 
-    format = None
-    if "f" in request.args:
-        format = request.args["f"]
+    req = await AsyncAPIRequest.from_request(request)
+    format = req._get_format(request.headers)
 
     if collection_id:
         if collection_id in filter_dict_by_key_value(CONFIG['resources'], 'type', 'collection'):
             # The collection is defined in 'resources'
-            response = api_.describe_collections(CompatibilityRequest(None, request.headers, request.args),
-                                                 collection_id)
+            response = core_api.describe_collections(api_, req, collection_id)
         else:
             # The collection is dynamic via csapi
+            print(f"HEERE {format}")
             response = await csapi_.get_collections(request,
                                                     ({}, HTTPStatus.NOT_FOUND, ""),
-                                                    "application/json",
+                                                    format,
                                                     collection_id)
     else:
         # Overwrite original request format with json so we can modify response later on and add CSAPI-entities
-        request.args["f"] = "json"
-        body = await request.data
-        response = api_.describe_collections(CompatibilityRequest(body, request.headers, request.args))
+
+        request.args['f'] = "json"
+        response = core_api.describe_collections(api_, await AsyncAPIRequest.from_request(request))
 
         # Add CSAPI-Collections to response
-        response = await csapi_.get_collections(request, response, "application/json")
+        print(f"original format {format}")
+        response = await csapi_.get_collections(request, response, format)
 
     return await to_response(response)
 
@@ -57,9 +60,9 @@ async def collection_items(collection_id: str, item_id: str = None):
     # Resource is configured via 'resources'
     if collection_id in filter_dict_by_key_value(CONFIG['resources'], 'type', 'collection'):
         if item_id:
-            response = api_.get_collection_item(request, collection_id, item_id)
+            response = itemtypes_api.get_collection_item(api_, await AsyncAPIRequest.from_request(request), collection_id, item_id)
         else:
-            response = api_.get_collection_items(request, collection_id)
+            response = itemtypes_api.get_collection_items(api_, await AsyncAPIRequest.from_request(request), collection_id)
     else:
         # Resource is dynamic via csapi
         response = await csapi_.get_collection_items(request, collection_id, item_id)
@@ -75,8 +78,7 @@ async def collection_schema(collection_id):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_collection_schema(compat, collection_id))
+    return await to_response(core_api.get_collection_schema(api_, await AsyncAPIRequest.from_request(request), collection_id))
 
 
 @collections.route('/collections/<path:collection_id>/queryables')
@@ -88,8 +90,7 @@ async def collection_queryables(collection_id=None):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_collection_queryables(compat, collection_id))
+    return await to_response(itemtypes_api.get_collection_queryables(api_, await AsyncAPIRequest.from_request(request), collection_id))
 
 
 @collections.route('/collections/<path:collection_id>/tiles')
@@ -101,14 +102,12 @@ async def get_collection_tiles(collection_id=None):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_collection_tiles(
-        compat, collection_id))
+    return await to_response(tiles_api.get_collection_tiles(api_, await AsyncAPIRequest.from_request(request), collection_id))
 
 
 @collections.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')
 @collections.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
-async def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
+async def get_collection_tiles_metadata2(collection_id=None, tileMatrixSetId=None):
     """
     OGC open api collection tiles service metadata
 
@@ -117,9 +116,7 @@ async def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_collection_tiles_metadata(
-        compat, collection_id, tileMatrixSetId))
+    return await to_response(tiles_api.get_collection_tiles_metadata(api_, await AsyncAPIRequest.from_request(request), collection_id, tileMatrixSetId))
 
 
 @collections.route('/collections/<path:collection_id>/tiles/\
@@ -137,9 +134,9 @@ async def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_collection_tiles_data(
-        compat, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol))
+    return await to_response(tiles_api.get_collection_tiles_data(
+        api_, await AsyncAPIRequest.from_request(request),
+        collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol))
 
 
 @collections.route('/collections/<collection_id>/map')

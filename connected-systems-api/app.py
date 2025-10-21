@@ -16,6 +16,7 @@
 import os.path
 import secrets
 
+import pygeoapi.api as core_api
 from pygeoapi import static
 from quart import request, send_from_directory
 from quart_auth import basic_auth_required
@@ -23,7 +24,11 @@ from quart_cors import cors
 
 from api import *
 from routes.collections import collections
+from routes.coverages import coverage
 from routes.csa import csa_read, csa_readwrite
+from routes.edr import edr
+from routes.processes import oapip
+from routes.stac import stac
 
 APP = CustomQuart(__name__,
                   static_folder=static.__path__._path[0],
@@ -74,10 +79,10 @@ APP.register_blueprint(csa_read)
 APP.register_blueprint(csa_readwrite)
 
 # TODO: make this configurable, only import required/configured
-# APP.register_blueprint(edr)
-# APP.register_blueprint(stac)
-# APP.register_blueprint(oapip)
-# APP.register_blueprint(coverage)
+APP.register_blueprint(edr)
+APP.register_blueprint(stac)
+APP.register_blueprint(oapip)
+APP.register_blueprint(coverage)
 APP.register_blueprint(collections)
 
 
@@ -115,10 +120,7 @@ async def assets(filename):
 
 @APP.get('/openapi')
 async def openapi():
-    from pygeoapi.flask_app import api_
-    request.collection = None
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.openapi_(compat))
+    return await to_response(core_api.openapi_(api_, await AsyncAPIRequest.from_request(request)))
 
 
 @APP.get('/conformance')

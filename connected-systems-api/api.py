@@ -25,8 +25,8 @@ from jsonschema.validators import Draft202012Validator
 from pygeoapi.api import *
 from pygeoapi.config import get_config
 from pygeoapi.openapi import load_openapi_document
+from pygeoapi.plugin import PLUGINS
 from pygeoapi.provider.base import ProviderItemNotFoundError, ProviderInvalidQueryError
-from pygeoapi.util import render_j2_template
 
 from meta import CSMeta
 from provider.definitions import *
@@ -62,7 +62,7 @@ class SchemaValidator:
                           ("datastream_validator", "schemas/datastream.schema"),
                           ("observation_validator", "schemas/observation.schema")]:
             with open(os.path.join(package_dir, loc), 'r') as definition:
-                setattr(self, prop, Draft202012Validator(json.load(definition)))
+                setattr(self, prop, Draft202012Validator(orjson.loads(definition.read())))
 
     def validate(self, collection: EntityType, encoding: str, instance: any) -> None:
         validator: Validator = None
@@ -193,17 +193,22 @@ class CSAPI(CSMeta):
         headers = template[0]
         if data:
             if collection_id is not None:
-                headers["Content-Type"] = "application/json"
-                return headers, HTTPStatus.OK, orjson.dumps(data[0][0])
-            else:
-                fcm['collections'].extend(data[0])
                 if original_format == F_HTML:  # render
-                    fcm['collections_path'] = f"{self.base_url}/collections"
+                    path = os.path.join(os.path.dirname(__file__), "templates/connected-systems/collectionitem.html")
+                    content = data[0][0]
+                    content['collections_path'] = f"{self.base_url}/collections"
+                    rendered = csapi_.render_j2_template(path, content, request.locale)
                     headers["Content-Type"] = "text/html"
-                    content = render_j2_template(self.tpl_config,
-                                                 'collections/index.html',
-                                                 fcm,
-                                                 request.locale)
+                    return headers, HTTPStatus.OK, rendered
+                else:
+                    headers["Content-Type"] = "application/json"
+                    return headers, HTTPStatus.OK, orjson.dumps(data[0][0])
+            else:
+                if original_format == F_HTML:
+                    fcm['collections_path'] = f"{self.base_url}/collections"
+                    fcm['collections'].extend(data[0])
+                    headers["Content-Type"] = "text/html"
+                    content = csapi_.render_j2_template('collections/index.html', fcm, request.locale)
                     return headers, HTTPStatus.OK, content
                 else:
                     headers["Content-Type"] = "application/json"
@@ -513,10 +518,7 @@ class CSAPI(CSMeta):
             }
         ]
         path = os.path.join(os.path.dirname(__file__), "templates/connected-systems/viewer.html")
-        content = render_j2_template(self.tpl_config,
-                                     path,
-                                     data,
-                                     request.locale)
+        content = csapi_.render_j2_template(path, data, request.locale)
         return headers, HTTPStatus.OK, content
 
     def _format_json_response(self, request, headers, data, is_collection: bool) -> APIResponse:
@@ -556,3 +558,4 @@ CONFIG = get_config()
 OPENAPI = load_openapi_document()
 
 csapi_ = CSAPI(CONFIG, OPENAPI)
+api_ = API(CONFIG, OPENAPI)

@@ -1,7 +1,8 @@
+import pygeoapi.api.processes as processes_api
+from pygeoapi.flask_app import api_
 from quart import Blueprint, request
 
-from pygeoapi.flask_app import api_
-from util import CompatibilityRequest, to_response
+from util import to_response, AsyncAPIRequest
 
 oapip = Blueprint('oapip', __name__)
 
@@ -16,8 +17,7 @@ async def get_processes(process_id=None):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.describe_processes(compat, process_id))
+    return await to_response(processes_api.describe_processes(api_, await AsyncAPIRequest.from_request(request), process_id))
 
 
 @oapip.route('/jobs')
@@ -30,15 +30,14 @@ async def get_jobs(job_id=None):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
 
     if job_id is None:
-        return await to_response(api_.get_jobs(compat))
+        return await to_response(processes_api.get_jobs(api_, await AsyncAPIRequest.from_request(request)))
     else:
         if request.method == 'DELETE':  # dismiss job
-            return await to_response(api_.delete_job(compat, job_id))
+            return await to_response(processes_api.delete_job(api_, await AsyncAPIRequest.from_request(request), job_id))
         else:  # Return status of a specific job
-            return await to_response(api_.get_jobs(compat, job_id))
+            return await to_response(processes_api.get_jobs(api_, await AsyncAPIRequest.from_request(request), job_id))
 
 
 @oapip.route('/processes/<process_id>/execution', methods=['POST'])
@@ -50,9 +49,7 @@ async def execute_process_jobs(process_id):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(await request.body, request.headers, request.args)
-
-    return await to_response(api_.execute_process(compat, process_id))
+    return await to_response(processes_api.execute_process(api_, await AsyncAPIRequest.from_request(request), process_id))
 
 
 @oapip.route('/jobs/<job_id>/results',
@@ -65,20 +62,4 @@ async def get_job_result(job_id=None):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_job_result(compat, job_id))
-
-
-@oapip.route('/jobs/<job_id>/results/<resource>', methods=['GET'])
-async def get_job_result_resource(job_id, resource):
-    """
-    OGC API - Processes job result resource endpoint
-
-    :param job_id: job identifier
-    :param resource: job resource
-
-    :returns: HTTP response
-    """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_job_result_resource(
-        compat, job_id, resource))
+    return await to_response(processes_api.get_job_result(api_, await AsyncAPIRequest.from_request(request), job_id))

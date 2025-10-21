@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Self, Union, Tuple, Optional, List
 
 from pygeoapi import l10n
-from pygeoapi.api import APIRequest
+from pygeoapi.api import APIRequest, SYSTEM_LOCALE
 from quart import make_response, Quart, Request
 from werkzeug.datastructures import MultiDict
 
@@ -60,6 +60,7 @@ csapi_meta_info{{version={self._version}, mode={self.mode}}} 1
 class ModifiableRequest(Request):
     dict_storage_class = MultiDict
     parameter_storage_class = MultiDict
+    collection = str
 
 
 class CustomQuart(Quart):
@@ -69,7 +70,9 @@ class CustomQuart(Quart):
 
 class AsyncAPIRequest(APIRequest):
     @classmethod
-    async def with_data(cls, request, supported_locales) -> Self:
+    async def from_request(cls, request: Union[ModifiableRequest, Request], supported_locales=None) -> Self:
+        if supported_locales is None:
+            supported_locales = [SYSTEM_LOCALE]
         api_req = cls(request, supported_locales)
         api_req._data = await request.data
         if request.collection:
@@ -79,7 +82,7 @@ class AsyncAPIRequest(APIRequest):
     def is_valid(self, allowed_formats: Optional[list[str]] = None) -> bool:
         if not self._format:
             return True
-        if self._format in (f.value.lower() for f in (allowed_formats or ())):
+        if self._format in (f.lower() for f in (allowed_formats or ())):
             return True
         return False
 
@@ -104,24 +107,13 @@ class AsyncAPIRequest(APIRequest):
 def parse_request(func):
     async def inner(*args):
         cls, req_in = args[:2]
-        req_out = await AsyncAPIRequest.with_data(req_in, getattr(cls, 'locales', set()))
+        req_out = await AsyncAPIRequest.from_request(req_in, getattr(cls, 'locales'))
         if len(args) > 2:
             return await func(cls, req_out, *args[2:])
         else:
             return await func(cls, req_out)
 
     return inner
-
-
-class CompatibilityRequest:
-    data = None
-    headers = None
-    args = None
-
-    def __init__(self, data, headers, args):
-        self.data = data
-        self.headers = headers
-        self.args = args
 
 
 async def to_response(result: APIResponse):

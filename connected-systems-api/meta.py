@@ -1,16 +1,14 @@
-import logging
 import os
 from copy import deepcopy
 from http import HTTPStatus
 
-from pygeoapi import l10n
 from pygeoapi.api import F_JSONLD, F_JSON, F_HTML, CHARSET, F_GZIP, SYSTEM_LOCALE, FORMAT_TYPES
 from pygeoapi.log import setup_logger
-from pygeoapi.util import render_j2_template, filter_dict_by_key_value, to_json, get_api_rules, get_base_url, \
-    UrlPrefetcher, TEMPLATES
+from pygeoapi.util import filter_dict_by_key_value, to_json, get_api_rules, get_base_url, \
+    UrlPrefetcher, TEMPLATESDIR
 
-from util import *
 from provider.definitions import *
+from util import *
 
 LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +50,7 @@ class CSMeta:
         self.default_locale = self.locales[0]
 
         if 'templates' not in self.config['server']:
-            self.config['server']['templates'] = {'path': TEMPLATES}
+            self.config['server']['templates'] = {'path': TEMPLATESDIR}
 
         if 'pretty_print' not in self.config['server']:
             self.config['server']['pretty_print'] = False
@@ -88,8 +86,7 @@ class CSMeta:
 
         if format_ == F_HTML:
             headers['Content-Type'] = FORMAT_TYPES[F_HTML]
-            content = render_j2_template(
-                self.config, 'exception.html', exception, SYSTEM_LOCALE)
+            content = self.render_j2_template('exception.html', exception, SYSTEM_LOCALE)
         else:
             if headers is None:
                 headers = {}
@@ -189,8 +186,7 @@ class CSMeta:
                 fcm['collection'] = True
 
             path = os.path.join(os.path.dirname(__file__), "templates/landing_page.html")
-            content = render_j2_template(self.tpl_config, path,
-                                         fcm, request.locale)
+            content = self.render_j2_template(path, fcm, request.locale)
             return headers, HTTPStatus.OK, content
 
         return headers, HTTPStatus.OK, to_json(fcm, self.pretty_print)
@@ -371,9 +367,7 @@ class CSMeta:
 
         if request.format == F_HTML:  # render
             path = os.path.join(os.path.dirname(__file__), "templates/connected-systems/overview.html")
-            content = render_j2_template(self.tpl_config,
-                                         path,
-                                         content, request.locale)
+            content = self.render_j2_template(path, content, request.locale)
             return headers, HTTPStatus.OK, content
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
@@ -397,8 +391,17 @@ class CSMeta:
 
         headers = request.get_response_headers(**self.api_headers)
         if request.format == F_HTML:  # render
-            content = render_j2_template(self.tpl_config, 'conformance.html',
-                                         conformance, str(request.locale))
+            content = self.render_j2_template('conformance.html',
+                                              conformance,
+                                              str(request.locale))
             return headers, HTTPStatus.OK, content
 
         return headers, HTTPStatus.OK, to_json(conformance, self.pretty_print)
+
+    def render_j2_template(self, template: str, content: dict, locale: Union[str, l10n.Locale]) -> str:
+        from pygeoapi.util import render_j2_template
+        return render_j2_template(self.tpl_config,
+                                  self.config['server']['templates'],
+                                  template,
+                                  content,
+                                  str(locale))

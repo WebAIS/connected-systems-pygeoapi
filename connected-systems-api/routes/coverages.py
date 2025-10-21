@@ -1,7 +1,9 @@
+import pygeoapi.api.coverages as coverages_api
+from pygeoapi.flask_app import api_
 from quart import request, Blueprint
 
-from pygeoapi.flask_app import api_
 from util import *
+
 coverage = Blueprint('coverage', __name__)
 
 
@@ -14,5 +16,4 @@ async def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_collection_coverage(compat, collection_id))
+    return await to_response(coverages_api.get_collection_coverage(api_, await AsyncAPIRequest.from_request(request), collection_id))

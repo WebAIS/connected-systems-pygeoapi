@@ -1,6 +1,7 @@
+import pygeoapi.api.environmental_data_retrieval as edr_api
+from pygeoapi.flask_app import api_
 from quart import request, Blueprint
 
-from pygeoapi.flask_app import api_
 from util import *
 
 edr = Blueprint('edr', __name__)
@@ -32,12 +33,13 @@ async def get_collection_edr_query(collection_id, instance_id=None, location_id=
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequestf(None, request.headers, request.args)
     if location_id:
         query_type = 'locations'
     else:
         query_type = request.path.split('/')[-1]
 
-    return await to_response(api_.get_collection_edr_query(compat, collection_id,
-                                                           instance_id, query_type,
-                                                           location_id))
+    return await to_response(edr_api.get_collection_edr_query(
+        api_, await AsyncAPIRequest.from_request(request),
+        collection_id,
+        instance_id, query_type,
+        location_id))

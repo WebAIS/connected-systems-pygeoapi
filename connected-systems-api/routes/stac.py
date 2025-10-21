@@ -1,6 +1,7 @@
+import pygeoapi.api.stac as stac_api
+from pygeoapi.flask_app import api_
 from quart import Blueprint, request
 
-from pygeoapi.flask_app import api_
 from util import *
 
 stac = Blueprint('stac', __name__)
@@ -13,8 +14,7 @@ async def stac_catalog_root():
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_stac_root(compat))
+    return await to_response(stac_api.get_stac_root(api_, await AsyncAPIRequest.from_request(request)))
 
 
 @stac.route('/stac/<path:path>')
@@ -26,5 +26,4 @@ async def stac_catalog_path(path):
 
     :returns: HTTP response
     """
-    compat = CompatibilityRequest(None, request.headers, request.args)
-    return await to_response(api_.get_stac_path(compat, path))
+    return await to_response(stac_api.get_stac_path(api_, await AsyncAPIRequest.from_request(request), path))
