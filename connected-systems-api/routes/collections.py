@@ -35,7 +35,7 @@ async def all_collections(collection_id: str = None):
             # The collection is dynamic via csapi
             response = await csapi_.get_collections(request,
                                                     ({}, HTTPStatus.NOT_FOUND, ""),
-                                                    format,
+                                                    "application/json",
                                                     collection_id)
     else:
         # Overwrite original request format with json so we can modify response later on and add CSAPI-entities

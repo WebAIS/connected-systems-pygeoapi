@@ -1,7 +1,7 @@
 from datetime import datetime as DateTime
 from typing import Dict
 
-from elasticsearch_dsl import AttrDict
+from elasticsearch.dsl import AttrDict
 from pygeoapi.provider.base import ProviderInvalidQueryError
 
 

@@ -1,7 +1,7 @@
 import logging
 from typing import Dict
 
-from elasticsearch_dsl import Keyword, GeoShape, Date, InnerDoc, Object, GeoPoint, Text, Nested
+from elasticsearch.dsl import Keyword, GeoShape, Date, InnerDoc, Object, GeoPoint, Text, Nested
 
 from provider.definitions import es_conn_part1, CSDocument
 from util import MimeType
@@ -43,6 +43,7 @@ class DeploymentGeoJson(InnerDoc):
 
 class Deployment(CSDocument):
     linked_system_ids = Keyword()
+    parent = Keyword()
     geometry = GeoShape()
     sml = Nested(DeploymentSML)
     geojson = Nested(DeploymentGeoJson)

@@ -1,6 +1,6 @@
 from typing import ClassVar, Text, Optional
 
-from elasticsearch_dsl import AsyncDocument, Keyword, InnerDoc, Object, AttrDict
+from elasticsearch.dsl import AsyncDocument, Keyword, InnerDoc, Object, AttrDict
 
 from provider import es_conn_part2
 

@@ -1,7 +1,7 @@
 import logging
 from typing import Dict
 
-from elasticsearch_dsl import Keyword, GeoShape, InnerDoc, Object, Text, Nested
+from elasticsearch.dsl import Keyword, GeoShape, InnerDoc, Object, Text, Nested
 
 from provider.definitions import es_conn_part1, CSDocument
 from util import MimeType

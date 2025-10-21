@@ -1,6 +1,6 @@
 from typing import Dict
 
-from elasticsearch_dsl import Keyword, GeoShape, Date, InnerDoc, Object, GeoPoint, Text, Nested
+from elasticsearch.dsl import Keyword, GeoShape, Date, InnerDoc, Object, GeoPoint, Text, Nested
 from pygeoapi.provider.base import ProviderInvalidQueryError
 
 from provider.definitions import es_conn_part1, CSDocument
@@ -24,7 +24,6 @@ class SystemSML(InnerDoc):
     lang = Text()
     keywords = Text()
     position = GeoShape()
-    parent = Keyword()
     procedure = Keyword()
     poi = Keyword()
     observedProperty = Keyword()

@@ -6,7 +6,7 @@ from pprint import pformat
 import asyncpg
 import elasticsearch
 from asyncpg import Connection
-from elasticsearch_dsl import async_connections
+from elasticsearch.dsl import async_connections
 from pygeoapi.provider.base import ProviderGenericError, ProviderItemNotFoundError, ProviderInvalidQueryError
 
 from .formats.om_json_scalar import OMJsonSchemaParser
@@ -168,6 +168,10 @@ class ConnectedSystemsTimescaleDBProvider(ConnectedSystemsPart2Provider, Elastic
                     LOGGER.error("TODO: Restore datastreams")
                     # Create row for each datastream
                     # find out first/last timestamps of associated observations
+                else:
+                    datastreams = await Datastream().search().execute()
+                    for ds in datastreams:
+                        await connection.fetchval("INSERT INTO datastreams (id) VALUES ($1);", ds.get("id"))
 
     def get_conformance(self) -> List[str]:
         """Returns the list of conformance classes that are implemented by this provider"""

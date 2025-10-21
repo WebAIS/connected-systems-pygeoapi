@@ -1,4 +1,4 @@
-from elasticsearch_dsl import AsyncDocument, Keyword
+from elasticsearch.dsl import AsyncDocument, Keyword
 
 from provider import es_conn_part1
 

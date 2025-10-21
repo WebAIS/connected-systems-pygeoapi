@@ -182,7 +182,7 @@ class CSAPI(CSMeta):
 
             parameters = parse_query_parameters(CollectionParams(), request.params,
                                                 self.base_url + "/" + request.path_info)
-            parameters.format = original_format
+            parameters.format = MimeType.F_JSON.value
             data = await self.provider_part1.query_collections(parameters)
         except ProviderItemNotFoundError:
             # element was not found in resources nor dynamic-resources, return 404
@@ -219,9 +219,10 @@ class CSAPI(CSMeta):
             if item_id:
                 request_params['id'] = item_id
 
-            parameters = parse_query_parameters(CollectionParams(), request_params, self.base_url + "/" +
-                                                request.path_info)
+            parameters = parse_query_parameters(CollectionParams(), request_params,
+                                                self.base_url + "/" + request.path_info)
             data = await self.provider_part1.query_collection_items(collection_id, parameters)
+            headers["Content-Type"] = "application/geo+json"
             return self._format_json_response(request, headers, data, item_id is None)
         except ProviderItemNotFoundError:
             return headers, HTTPStatus.NOT_FOUND, ""
@@ -522,7 +523,7 @@ class CSAPI(CSMeta):
         if data is None:
             return headers, HTTPStatus.NOT_FOUND, ""
         match request.format:
-            case MimeType.F_GEOJSON.value:
+            case (MimeType.F_JSON.value | MimeType.F_GEOJSON.value):
                 response = {
                     "type": "FeatureCollection",
                     "features": [item for item in data[0]],

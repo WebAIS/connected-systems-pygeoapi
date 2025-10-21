@@ -115,9 +115,10 @@ async def assets(filename):
 
 @APP.get('/openapi')
 async def openapi():
-    from pygeoapi import flask_app
+    from pygeoapi.flask_app import api_
     request.collection = None
-    return flask_app.openapi()
+    compat = CompatibilityRequest(None, request.headers, request.args)
+    return await to_response(api_.openapi_(compat))
 
 
 @APP.get('/conformance')
@@ -156,8 +157,10 @@ async def close_db():
 if __name__ == "__main__":
     for _ in range(5):
         LOGGER.critical("!!! RUNNING IN DEBUG MODE !!! ")
-        APP.config["QUART_AUTH_BASIC_USERNAME"] = "test"
-        APP.config["QUART_AUTH_BASIC_PASSWORD"] = "test"
+        APP.config["QUART_AUTH_BASIC_READ_USERNAME"] = "test"
+        APP.config["QUART_AUTH_BASIC_READ_PASSWORD"] = "test"
+        APP.config["QUART_AUTH_BASIC_READWRITE_USERNAME"] = "test"
+        APP.config["QUART_AUTH_BASIC_READWRITE_PASSWORD"] = "test"
         print(APP.config)
 
     """ Initialize peristent database/provider connections """

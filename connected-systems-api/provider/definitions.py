@@ -21,7 +21,8 @@ from datetime import datetime as DateTime
 from enum import Enum, auto
 from typing import List, Optional, Dict, Tuple, TypeAlias, Text, ClassVar
 
-from elasticsearch_dsl import AsyncDocument, Keyword, AttrDict, DateRange
+from elasticsearch.dsl import Object
+from elasticsearch.dsl import AsyncDocument, Keyword, AttrDict, DateRange
 
 from provider import es_conn_part1
 from .util import _format_date_range
@@ -171,12 +172,7 @@ class ObservationsParams(FoiObservedpropertyParam, ResulttimePhenomenontimeParam
     datastream: Optional[str] = None
 
 
-class Collection(AsyncDocument):
-    id = Keyword()
 
-    class Index:
-        name = "collections"
-        using = es_conn_part1
 
 
 class ConnectedSystemsProvider:

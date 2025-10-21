@@ -4,9 +4,9 @@ from pprint import pformat
 from typing import Union
 
 from elastic_transport import NodeConfig
-from elasticsearch_dsl import AsyncSearch, Q
-from elasticsearch_dsl.async_connections import connections
-from elasticsearch_dsl.query import Bool
+from elasticsearch.dsl import AsyncSearch, Q
+from elasticsearch.dsl.async_connections import connections
+from elasticsearch.dsl.query import Bool
 from pygeoapi.provider.base import ProviderConnectionError, ProviderItemNotFoundError
 
 from .definitions import *

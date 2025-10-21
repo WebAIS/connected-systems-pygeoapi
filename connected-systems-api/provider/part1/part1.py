@@ -18,9 +18,11 @@ import uuid
 from typing import Callable, Awaitable
 
 import elasticsearch
-from elasticsearch_dsl import async_connections
+from elasticsearch.dsl import async_connections
 from pygeoapi.provider.base import ProviderGenericError, ProviderItemNotFoundError, ProviderInvalidQueryError
 
+from ..collection import Collection
+from ..datastream import Datastream
 from ..definitions import *
 from ..deployment import Deployment
 from ..elasticsearch import ElasticsearchConnector, ElasticSearchConfig, parse_csa_params, parse_spatial_params, \
@@ -65,137 +67,166 @@ class ConnectedSystemsESProvider(ConnectedSystemsPart1Provider, ElasticsearchCon
         await Procedure.init()
         await SamplingFeature.init()
         await Property.init()
-        # await self.__create_mandatory_collections()
+        await self.__create_mandatory_collections()
 
     async def close(self):
         es = async_connections.get_connection(es_conn_part1)
         await es.close()
 
-    # async def __create_mandatory_collections(self):
-    #     # Create mandatory collections if not exists
-    #
-    #     mandatory = [
-    #         {
-    #             "id": "all_systems",
-    #             "type": "collection",
-    #             "title": "All Systems Instances",
-    #             "description": "All systems registered on this server (e.g. platforms, sensors, actuators, processes)",
-    #             "itemType": "feature",
-    #             "featureType": "system",
-    #             "links": [
-    #                 {
-    #                     "rel": "self",
-    #                     "title": "This document (JSON)",
-    #                     "href": "/collections/all_systems",
-    #                     "type": "application/json"
-    #                 },
-    #                 {
-    #                     "rel": "items",
-    #                     "title": "Access the system instances in this collection (HTML)",
-    #                     "href": "/systems",
-    #                     "type": "text/html"
-    #                 },
-    #                 {
-    #                     "rel": "items",
-    #                     "title": "Access the system instances in this collection (JSON)",
-    #                     "href": "/systems?f=application/json",
-    #                     "type": "application/json"
-    #                 }
-    #             ]
-    #         },
-    #         {
-    #             "id": "all_datastreams",
-    #             "type": "collection",
-    #             "title": "All Systems Datastreams",
-    #             "description": "All datastreams produced by systems registered on this server",
-    #             "itemType": "feature",
-    #             "featureType": "datastreams",
-    #             "links": [
-    #                 {
-    #                     "rel": "self",
-    #                     "title": "This document (JSON)",
-    #                     "href": "/collections/all_datastreams",
-    #                     "type": "application/json"
-    #                 },
-    #                 {
-    #                     "rel": "items",
-    #                     "title": "Access the datastreams in this collection (HTML)",
-    #                     "href": "/datastreams",
-    #                     "type": "text/html"
-    #                 },
-    #                 {
-    #                     "rel": "items",
-    #                     "title": "Access the datastreams in this collection (JSON)",
-    #                     "href": "/datastreams?f=application/json",
-    #                     "type": "application/json"
-    #                 }
-    #             ]
-    #         },
-    #         {
-    #             "id": "all_fois",
-    #             "type": "collection",
-    #             "title": "All Features of Interest",
-    #             "description": "All features of interest observed or affected by systems registered on this server",
-    #             "itemType": "feature",
-    #             "featureType": "featureOfInterest",
-    #             "links": [
-    #                 {
-    #                     "rel": "self",
-    #                     "title": "This document (JSON)",
-    #                     "href": "/collections/all_fois",
-    #                     "type": "application/json"
-    #                 },
-    #                 {
-    #                     "rel": "items",
-    #                     "title": "Access the features of interests in this collection (HTML)",
-    #                     "href": "/featuresOfInterest",
-    #                     "type": "text/html"
-    #                 },
-    #                 {
-    #                     "rel": "items",
-    #                     "title": "Access the features of interests in this collection (JSON)",
-    #                     "href": "/featuresOfInterest?f=application/json",
-    #                     "type": "application/json"
-    #                 }
-    #             ]
-    #         },
-    #         {
-    #             "id": "all_procedures",
-    #             "type": "collection",
-    #             "title": "All Procedures and System Datasheets",
-    #             "description": "All procedures (e.g. system datasheets) implemented by systems registered on this server",
-    #             "itemType": "feature",
-    #             "featureType": "procedure",
-    #             "links": [
-    #                 {
-    #                     "rel": "self",
-    #                     "title": "This document (JSON)",
-    #                     "href": "/collections/all_procedures",
-    #                     "type": "application/json"
-    #                 },
-    #                 {
-    #                     "rel": "items",
-    #                     "title": "Access the procedures in this collection (HTML)",
-    #                     "href": "procedures",
-    #                     "type": "text/html"
-    #                 },
-    #                 {
-    #                     "rel": "items",
-    #                     "title": "Access the procedures in this collection (JSON)",
-    #                     "href": "procedures?f=application/json",
-    #                     "type": "application/json"
-    #                 }
-    #             ]
-    #         }
-    #     ]
-    #
-    #     for coll in mandatory:
-    #         if not await Collection.exists(id=coll["id"]):
-    #             c = Collection(**coll)
-    #             c.meta.id = coll["id"]
-    #             await c.save()
-    #
-    #         LOGGER.info(f"creating mandatory collection {coll['id']}")
+    async def __create_mandatory_collections(self):
+        # Create mandatory collections if not exists
+        mandatory = [
+            {
+                "id": "all_systems",
+                "type": "collection",
+                "title": "All Systems Instances",
+                "description": "All systems registered on this server (e.g. platforms, sensors, actuators, processes)",
+                "itemType": "feature",
+                "featureType": "system",
+                "links": [
+                    {
+                        "rel": "self",
+                        "title": "This document (JSON)",
+                        "href": "/collections/all_systems",
+                        "type": "application/json"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the system instances in this collection (HTML)",
+                        "href": "/systems",
+                        "type": "text/html"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the system instances in this collection (JSON)",
+                        "href": "/systems?f=application/json",
+                        "type": "application/json"
+                    }
+                ]
+            },
+            {
+                "id": "all_datastreams",
+                "type": "collection",
+                "title": "All Datastreams",
+                "description": "All datastreams produced by systems registered on this server",
+                "itemType": "feature",
+                "featureType": "datastreams",
+                "links": [
+                    {
+                        "rel": "self",
+                        "title": "This document (JSON)",
+                        "href": "/collections/all_datastreams",
+                        "type": "application/json"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the datastreams in this collection (HTML)",
+                        "href": "/datastreams",
+                        "type": "text/html"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the datastreams in this collection (JSON)",
+                        "href": "/datastreams?f=application/json",
+                        "type": "application/json"
+                    }
+                ]
+            },
+            {
+                "id": "all_fois",
+                "type": "collection",
+                "title": "All Features of Interest",
+                "description": "All features of interest observed or affected by systems registered on this server",
+                "itemType": "feature",
+                "featureType": "featureOfInterest",
+                "links": [
+                    {
+                        "rel": "self",
+                        "title": "This document (JSON)",
+                        "href": "/collections/all_fois",
+                        "type": "application/json"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the features of interests in this collection (HTML)",
+                        "href": "/featuresOfInterest",
+                        "type": "text/html"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the features of interests in this collection (JSON)",
+                        "href": "/featuresOfInterest?f=application/json",
+                        "type": "application/json"
+                    }
+                ]
+            },
+            {
+                "id": "all_procedures",
+                "type": "collection",
+                "title": "All Procedures and System Datasheets",
+                "description": "All procedures (e.g. system datasheets) implemented by systems registered on this server",
+                "itemType": "feature",
+                "featureType": "procedure",
+                "links": [
+                    {
+                        "rel": "self",
+                        "title": "This document (JSON)",
+                        "href": "/collections/all_procedures",
+                        "type": "application/json"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the procedures in this collection (HTML)",
+                        "href": "procedures",
+                        "type": "text/html"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the procedures in this collection (JSON)",
+                        "href": "procedures?f=application/json",
+                        "type": "application/json"
+                    }
+                ]
+            },
+            {
+                "id": "all_deployments",
+                "type": "collection",
+                "title": "All Deployments of Systems",
+                "description": "All deployments registered on this server",
+                "itemType": "feature",
+                "featureType": "deployment",
+                "links": [
+                    {
+                        "rel": "self",
+                        "title": "This document (JSON)",
+                        "href": "/collections/all_deployments",
+                        "type": "application/json"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the deployments in this collection (HTML)",
+                        "href": "deployments",
+                        "type": "text/html"
+                    },
+                    {
+                        "rel": "items",
+                        "title": "Access the deployments in this collection (JSON)",
+                        "href": "deployments?f=application/json",
+                        "type": "application/json"
+                    }
+                ]
+            }
+        ]
+
+        for coll in mandatory:
+            if await Collection.exists(id=coll["id"]):
+                c = await Collection.get(coll["id"])
+                await c.delete()
+            c = Collection(raw=coll)
+            c.meta.id = coll["id"]
+            await c.save()
+
+            LOGGER.info(f"creating mandatory collection {coll['id']}")
 
     async def query_collections(self, parameters: CollectionParams) -> CSAGetResponse:
         query = Collection.search()
@@ -206,24 +237,28 @@ class ConnectedSystemsESProvider(ConnectedSystemsPart1Provider, ElasticsearchCon
         return await self.search(query, parameters)
 
     async def query_collection_items(self, collection_id: str, parameters: CSAParams) -> CSAGetResponse:
-        # TODO: implement this for non-mandatory collections
-        return None
+        if collection_id == "all_systems":
+            query = System.search()
+            parameters.format = MimeType.F_GEOJSON.value
+        elif collection_id == "all_procedures":
+            query = Procedure.search()
+            parameters.format = MimeType.F_GEOJSON.value
+        elif collection_id == "all_fois":
+            query = SamplingFeature.search()
+            parameters.format = MimeType.F_GEOJSON.value
+        elif collection_id == "all_deployments":
+            query = Deployment.search()
+            parameters.format = MimeType.F_GEOJSON.value
+        elif collection_id == "all_datastreams":
+            query = Datastream.search()
+            parameters.format = MimeType.F_JSON.value
+        else:
+            return None
 
-        # if collection_id == "all_systems":
-        #     query = System().search()
-        # elif collection_id == "all_procedures":
-        #     query = Procedure().search()
-        # elif collection_id == "all_datastreams":
-        #     query = Datastream().search()
-        # elif collection_id == "all_fois":
-        #     query = SamplingFeature().search()
-        # else:
-        #     return None
-        #
-        # if parameters.id:
-        #     query = query.filter("terms", _id=parameters.id)
-        #
-        # return await self.search(query, parameters)
+        if parameters.id:
+            query = query.filter("terms", _id=parameters.id)
+
+        return await self.search(query, parameters)
 
     async def query_systems(self, parameters: SystemsParams) -> CSAGetResponse:
         query = System.search()
