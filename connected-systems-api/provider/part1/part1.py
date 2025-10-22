@@ -19,6 +19,7 @@ from typing import Callable, Awaitable
 
 import elasticsearch
 from elasticsearch.dsl import async_connections
+from pygeoapi.api import F_JSON
 from pygeoapi.provider.base import ProviderGenericError, ProviderItemNotFoundError, ProviderInvalidQueryError
 
 from ..collection import Collection
@@ -237,6 +238,8 @@ class ConnectedSystemsESProvider(ConnectedSystemsPart1Provider, ElasticsearchCon
         return await self.search(query, parameters)
 
     async def query_collection_items(self, collection_id: str, parameters: CSAParams) -> CSAGetResponse:
+        post_hook: List[Callable[[CSAGetResponse], Awaitable[None]]] = []
+
         if collection_id == "all_systems":
             query = System.search()
             # parameters.format = MimeType.F_GEOJSON.value
@@ -251,14 +254,25 @@ class ConnectedSystemsESProvider(ConnectedSystemsPart1Provider, ElasticsearchCon
             # parameters.format = MimeType.F_GEOJSON.value
         elif collection_id == "all_datastreams":
             query = Datastream.search()
-            # parameters.format = MimeType.F_JSON.value
+            parameters.format = MimeType.F_JSON.value
+            async def to_geojson(response: CSAGetResponse):
+                for item in response[0]:
+                    item["type"] = "Feature"
+
+            post_hook.append(to_geojson)
         else:
             return None
 
         if parameters.id:
             query = query.filter("terms", _id=parameters.id)
 
-        return await self.search(query, parameters)
+        try:
+            data = await self.search(query, parameters)
+            for hook in post_hook:
+                await hook(data)
+            return data
+        except Exception as e:
+            raise ProviderInvalidQueryError(user_msg=str(e))
 
     async def query_systems(self, parameters: SystemsParams) -> CSAGetResponse:
         query = System.search()
