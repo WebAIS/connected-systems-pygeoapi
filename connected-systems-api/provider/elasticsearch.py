@@ -122,14 +122,14 @@ class ElasticsearchConnector:
                      query: AsyncSearch,
                      parameters: CSAParams) -> CSAGetResponse:
         # Select appropriate strategy here: For collections >10k elements search_after must be used
-        LOGGER.error(json.dumps(query.to_dict(), indent=True, default=str))
-
         match parameters.format:
             case MimeType.F_SMLJSON.value:
                 f = "sml"
             case MimeType.F_GEOJSON.value:
                 f = "geojson"
             case MimeType.F_JSON.value:
+                f = "json"
+            case "json":
                 f = "json"
             case _:
                 raise Exception(f"unrecognized Format {parameters.format}")

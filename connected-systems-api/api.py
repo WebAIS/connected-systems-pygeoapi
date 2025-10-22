@@ -217,8 +217,11 @@ class CSAPI(CSMeta):
         return headers, HTTPStatus.OK, orjson.dumps(fcm)
 
     @parse_request
-    async def get_collection_items(self, request: AsyncAPIRequest, collection_id: str, item_id: str) -> APIResponse:
+    async def get_collection_items(self, request: AsyncAPIRequest,
+                                   collection_id: str,
+                                   item_id: str) -> APIResponse:
         headers = request.get_response_headers(**self.api_headers)
+        format = request.format
         try:
             request_params = request.params
             if item_id:
@@ -226,9 +229,20 @@ class CSAPI(CSMeta):
 
             parameters = parse_query_parameters(CollectionParams(), request_params,
                                                 self.base_url + "/" + request.path_info)
-            data = await self.provider_part1.query_collection_items(collection_id, parameters)
-            headers["Content-Type"] = "application/geo+json"
-            return self._format_json_response(request, headers, data, item_id is None)
+            headers["Content-Type"] = format
+
+            if format == F_HTML:
+                parameters.format = MimeType.F_SMLJSON.value
+                data = await self.provider_part1.query_collection_items(collection_id, parameters)
+                path = os.path.join(os.path.dirname(__file__), "templates/connected-systems/collectionitems.html")
+                # data[0][0]["pretty"] = orjson.dumps(data, option=orjson.OPT_INDENT_2)
+                if len(data[0]) == 0:
+                    data[0].append(None)
+                rendered = self.render_j2_template(path, data[0][0], str(request.locale))
+                return headers, HTTPStatus.OK, rendered
+            else:
+                data = await self.provider_part1.query_collection_items(collection_id, parameters)
+                return self._format_json_response(request, headers, data, item_id is None)
         except ProviderItemNotFoundError:
             return headers, HTTPStatus.NOT_FOUND, ""
 
