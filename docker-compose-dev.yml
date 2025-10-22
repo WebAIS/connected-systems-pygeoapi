@@ -1,3 +1,6 @@
+### This starts all "supporting" containers, but not the app itself
+### Ports are forwarded to the host to allow for connecting from the IDE
+
 volumes:
   certs:
     driver: local
@@ -6,56 +9,44 @@ volumes:
   postgresdata:
     driver: local
 
-
 networks:
   default:
     name: elastic
     external: false
 
-
 services:
-#  proxy:
-#    image: nginx:alpine
+#  connected-systems-api:
+#    image: 52north/connected-systems-pygeoapi:local
+#    build:
+#      context: .
+#    environment:
+#      PYTHONUNBUFFERED: 1
+#      CSA_SERVER_BIND_HOST: localhost
+#      CSA_SERVER_BIND_PORT: 5000
+#      CSA_CORS_ALLOW_ORIGIN: "*"
+#      CSA_QUART_AUTH_BASIC_READ: "false"
+#      CSA_QUART_AUTH_BASIC_READWRITE: "false"
+#      CSA_DYNAMIC-RESOURCES_CSA-PART1_PROVIDER_HOST: es01
+#      CSA_DYNAMIC-RESOURCES_CSA-PART1_PROVIDER_PASSWORD: password
+#      CSA_DYNAMIC-RESOURCES_CSA-PART1_PROVIDER_USER: elastic
+#      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_ELASTIC_HOST: es01
+#      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_ELASTIC_PASSWORD: password
+#      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_ELASTIC_USER: elastic
+#      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_TIMESCALE_HOST: timescaledb
+#      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_TIMESCALE_PASSWORD: password
+#      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_TIMESCALE_USER: timescaledb
+#      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_TIMESCALE_PORT: 5432
 #    ports:
-#      - 80:80
-#    volumes:
-#      - "./nginx-proxy.conf:/etc/nginx/conf.d/default.conf"
+#      - 5000:5000
+#    healthcheck:
+#      test: [ "CMD-SHELL", 'sh -c "wget -q -nv --spider http://127.0.0.1:5000/status || exit 1"' ]
+#      interval: 15s
+#      timeout: 30s
 #    depends_on:
-#      - connected-systems-api
-
-  connected-systems-api:
-    image: 52north/connected-systems-pygeoapi:v0.5-test
-    build:
-      context: .
-    environment:
-      PYTHONUNBUFFERED: 1
-      CSA_SERVER_BIND_HOST: localhost
-      CSA_SERVER_BIND_PORT: 5000
-      CSA_CORS_ALLOW_ORIGIN: "*"
-      #CSA_CORS_ALLOW_CREDENTIALS:
-      #CSA_CORS_ALLOW_METHODS:
-      #CSA_CORS_EXPOSE_HEADERS:
-      #CSA_CORS_MAX_AGE:
-      CSA_DYNAMIC-RESOURCES_CSA-PART1_PROVIDER_HOST: es01
-      CSA_DYNAMIC-RESOURCES_CSA-PART1_PROVIDER_PASSWORD: ${ELASTIC_PASSWORD}
-      CSA_DYNAMIC-RESOURCES_CSA-PART1_PROVIDER_USER: elastic
-      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_ELASTIC_HOST: es01
-      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
-      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_ELASTIC_USER: elastic
-      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_TIMESCALE_HOST: timescaledb
-      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_TIMESCALE_PASSWORD: password
-      CSA_DYNAMIC-RESOURCES_CSA-PART2_PROVIDER_TIMESCALE_USER: timescaledb
-    ports:
-      - 5000:5000
-    healthcheck:
-      test: [ "CMD-SHELL", 'sh -c "wget -q -nv --spider http://127.0.0.1:5000/status || exit 1"' ]
-      interval: 15s
-      timeout: 30s
-    depends_on:
-      es01:
-        condition: service_healthy
-      timescaledb:
-        condition: service_healthy
+#      es01:
+#        condition: service_healthy
+#      timescaledb:
+#        condition: service_healthy
 
   timescaledb:
     image: timescale/timescaledb-ha:pg16
@@ -73,6 +64,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    ports:
+      - 5433:5432
 
   # https://www.elastic.co/blog/getting-started-with-the-elastic-stack-and-docker-compose
   # https://github.com/elkninja/elastic-stack-docker-part-one
@@ -83,13 +76,6 @@ services:
     user: "0"
     command: >
       bash -c '
-        if [ x${ELASTIC_PASSWORD} == x ]; then
-          echo "Set the ELASTIC_PASSWORD environment variable in the .env file";
-          exit 1;
-        elif [ x${KIBANA_PASSWORD} == x ]; then
-          echo "Set the KIBANA_PASSWORD environment variable in the .env file";
-          exit 1;
-        fi;
         if [ ! -f config/certs/ca.zip ]; then
           echo "Creating CA";
           bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
@@ -122,7 +108,7 @@ services:
         echo "Waiting for Elasticsearch availability";
         until curl -s --cacert config/certs/ca/ca.crt https://es01:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
         echo "Setting kibana_system password";
-        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
+        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:password" -H "Content-Type: application/json" https://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"password\"}" | grep -q "^{}"; do sleep 10; done;
         echo "All done!";
       '
     healthcheck:
@@ -135,17 +121,19 @@ services:
     depends_on:
       setup:
         condition: service_healthy
-    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
     labels:
       co.elastic.logs/module: elasticsearch
+    ports:
+      - 9200:9200
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
       - esdata01:/usr/share/elasticsearch/data
     environment:
       - node.name=es01
-      - cluster.name=${CLUSTER_NAME}
+      - cluster.name=docker-cluster
       - discovery.type=single-node
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ELASTIC_PASSWORD=password
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=true
@@ -157,7 +145,7 @@ services:
       - xpack.security.transport.ssl.certificate=certs/es01/es01.crt
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
-      - xpack.license.self_generated.type=${LICENSE}
+      - xpack.license.self_generated.type=basic
       - "ES_JAVA_OPTS=-Xms750m -Xmx750m"
     ulimits:
       memlock:
@@ -174,41 +162,41 @@ services:
       retries: 120
 
   ######  Debugging  ######
-#  kibana:
-#    depends_on:
-#      es01:
-#        condition: service_healthy
-#    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
-#    labels:
-#      co.elastic.logs/module: kibana
-#    volumes:
-#      - certs:/usr/share/kibana/config/certs
-#    ports:
-#      - ${KIBANA_PORT}:5601
-#    environment:
-#      - SERVERNAME=kibana
-#      - ELASTICSEARCH_HOSTS=https://es01:9200
-#      - ELASTICSEARCH_USERNAME=kibana_system
-#      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
-#      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
-#      - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-#      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-#      - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-#    healthcheck:
-#      test:
-#        [
-#          "CMD-SHELL",
-#          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
-#        ]
-#      interval: 10s
-#      timeout: 10s
-#      retries: 120
-#
-#  pgadmin:
-#    image: dpage/pgadmin4
-#    environment:
-#      PGADMIN_DEFAULT_EMAIL: admin@example.io
-#      PGADMIN_DEFAULT_PASSWORD: admin
-#      PGADMIN_CONFIG_SERVER_MODE: 'False'
-#    ports:
-#      - 5050:80
+  kibana:
+    depends_on:
+      es01:
+        condition: service_healthy
+    image: docker.elastic.co/kibana/kibana:8.7.1
+    labels:
+      co.elastic.logs/module: kibana
+    volumes:
+      - certs:/usr/share/kibana/config/certs
+    ports:
+      - 5601:5601
+    environment:
+      - SERVERNAME=kibana
+      - ELASTICSEARCH_HOSTS=https://es01:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=password
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
+      - XPACK_SECURITY_ENCRYPTIONKEY=c34d38b3a14956121ff2170e5030b471551370178f43e5626eec58b04a30fae2
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=c34d38b3a14956121ff2170e5030b471551370178f43e5626eec58b04a30fae2
+      - XPACK_REPORTING_ENCRYPTIONKEY=c34d38b3a14956121ff2170e5030b471551370178f43e5626eec58b04a30fae2
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.io
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - 5050:80
