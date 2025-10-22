@@ -1,4 +1,4 @@
-FROM python:3.12-alpine AS base
+FROM ghcr.io/astral-sh/uv:alpine3.22 AS base
 
 LABEL maintainer="Jan Speckamp <j.speckamp@52north.org>" \
       org.opencontainers.image.authors="Jan Speckamp <j.speckamp@52north.org>" \
@@ -12,23 +12,25 @@ LABEL maintainer="Jan Speckamp <j.speckamp@52north.org>" \
 
 
 # alpine is confused where to look for python libraries so we need to support it here
-ENV PYTHONPATH=/usr/lib/python3.12/site-packages
+# ENV PYTHONPATH=/usr/lib/python3.12/site-packages
 ENV PROJ_DIR=/usr
 ENV PYTHONUNBUFFERED=1
+# ENV UV_COMPILE_BYTECODE=1
 
 RUN apk update
-RUN apk add gcc musl-dev git proj proj-dev proj-util geos geos-dev py3-numpy py3-shapely py3-shapely-pyc
+RUN apk add gcc g++ musl-dev gdal-dev python3-dev git proj proj-dev proj-util geos geos-dev py3-numpy py3-shapely py3-shapely-pyc
 
 WORKDIR /app
 
 # Install requirements
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY requirements_nodeps.txt .
-RUN pip install --no-deps -r requirements_nodeps.txt
+COPY pyproject.toml .
+# COPY uv.lock .
+
+RUN uv venv --system-site-packages
+RUN uv run uv sync
 
 # copy application files
 COPY connected-systems-api connected-systems-api
 COPY hypercorn.conf.py .
 
-CMD ["hypercorn", "-c", "hypercorn.conf.py", "connected-systems-api/app:APP"]
+CMD ["uv", "run", "hypercorn", "-c", "hypercorn.conf.py", "connected-systems-api/app:APP"]
