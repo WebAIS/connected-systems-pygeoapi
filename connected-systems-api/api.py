@@ -204,9 +204,9 @@ class CSAPI(CSMeta):
                     headers["Content-Type"] = "application/json"
                     return headers, HTTPStatus.OK, orjson.dumps(data[0][0])
             else:
+                fcm['collections'].extend(data[0])
                 if original_format == F_HTML:
                     fcm['collections_path'] = f"{self.base_url}/collections"
-                    fcm['collections'].extend(data[0])
                     headers["Content-Type"] = "text/html"
                     content = csapi_.render_j2_template('collections/index.html', fcm, request.locale)
                     return headers, HTTPStatus.OK, content
@@ -254,43 +254,43 @@ class CSAPI(CSMeta):
             case EntityType.SYSTEMS:
                 handler = self.provider_part1.query_systems
                 params = SystemsParams()
-                allowed_mimetypes = [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]
+                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON])
                 default_mimetype = MimeType.F_SMLJSON
             case EntityType.DEPLOYMENTS:
                 handler = self.provider_part1.query_deployments
                 params = DeploymentsParams()
-                allowed_mimetypes = [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]
+                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON])
                 default_mimetype = MimeType.F_SMLJSON
             case EntityType.PROCEDURES:
                 handler = self.provider_part1.query_procedures
                 params = ProceduresParams()
-                allowed_mimetypes = [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]
+                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON])
                 default_mimetype = MimeType.F_SMLJSON
             case EntityType.SAMPLING_FEATURES:
                 handler = self.provider_part1.query_sampling_features
                 params = SamplingFeaturesParams()
-                allowed_mimetypes = [MimeType.F_HTML, MimeType.F_GEOJSON]
+                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_GEOJSON])
                 default_mimetype = MimeType.F_GEOJSON
             case EntityType.PROPERTIES:
                 handler = self.provider_part1.query_properties
                 params = CSAParams()
-                allowed_mimetypes = [MimeType.F_HTML, MimeType.F_SMLJSON]
+                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON])
                 default_mimetype = MimeType.F_SMLJSON
             case EntityType.DATASTREAMS:
                 handler = self.provider_part2.query_datastreams
                 params = DatastreamsParams()
-                allowed_mimetypes = [MimeType.F_HTML, MimeType.F_JSON]
+                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_JSON])
                 default_mimetype = MimeType.F_JSON
             case EntityType.DATASTREAMS_SCHEMA:
                 handler = self.provider_part2.query_datastreams
                 params = DatastreamsParams()
                 params.schema = True
-                allowed_mimetypes = [MimeType.F_JSON]
+                allowed_mimetypes = (m.value for m in [MimeType.F_JSON])
                 default_mimetype = MimeType.F_JSON
             case EntityType.OBSERVATIONS:
                 handler = self.provider_part2.query_observations
                 params = ObservationsParams()
-                allowed_mimetypes = [MimeType.F_HTML, MimeType.F_JSON, MimeType.F_OMJSON]
+                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_JSON, MimeType.F_OMJSON])
                 default_mimetype = MimeType.F_JSON
 
         # Check if mime_type is allowed
