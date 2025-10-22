@@ -43,13 +43,13 @@ APP.config['QUART_CORS_EXPOSE_HEADERS'] = os.environ.get("CSA_CORS_EXPOSE_HEADER
 APP.config['QUART_CORS_MAX_AGE'] = os.environ.get("CSA_CORS_MAX_AGE")
 APP = cors(APP)
 
-APP.config["QUART_AUTH_BASIC_READ"] = os.environ.get("QUART_AUTH_BASIC_READ", False)
-APP.config["QUART_AUTH_BASIC_READ_USERNAME"] = os.environ.get("QUART_AUTH_BASIC_READ_USERNAME") or secrets.token_hex(32)
-APP.config["QUART_AUTH_BASIC_READ_PASSWORD"] = os.environ.get("QUART_AUTH_BASIC_READ_PASSWORD") or secrets.token_hex(32)
+APP.config["QUART_AUTH_BASIC_READ"] = os.environ.get("CSA_QUART_AUTH_BASIC_READ", "False").lower() in ('true', '1', 't')
+APP.config["QUART_AUTH_BASIC_READ_USERNAME"] = os.environ.get("CSA_QUART_AUTH_BASIC_READ_USERNAME") or secrets.token_hex(32)
+APP.config["QUART_AUTH_BASIC_READ_PASSWORD"] = os.environ.get("CSA_QUART_AUTH_BASIC_READ_PASSWORD") or secrets.token_hex(32)
 
-APP.config["QUART_AUTH_BASIC_READWRITE"] = os.environ.get("QUART_AUTH_BASIC_READWRITE", True)
-APP.config["QUART_AUTH_BASIC_READWRITE_USERNAME"] = os.environ.get("QUART_AUTH_BASIC_READWRITE_USERNAME") or secrets.token_hex(32)
-APP.config["QUART_AUTH_BASIC_READWRITE_PASSWORD"] = os.environ.get("QUART_AUTH_BASIC_READWRITE_PASSWORD") or secrets.token_hex(32)
+APP.config["QUART_AUTH_BASIC_READWRITE"] = os.environ.get("CSA_QUART_AUTH_BASIC_READWRITE", "True").lower() in ('true', '1', 't')
+APP.config["QUART_AUTH_BASIC_READWRITE_USERNAME"] = os.environ.get("CSA_QUART_AUTH_BASIC_READWRITE_USERNAME") or secrets.token_hex(32)
+APP.config["QUART_AUTH_BASIC_READWRITE_PASSWORD"] = os.environ.get("CSA_QUART_AUTH_BASIC_READWRITE_PASSWORD") or secrets.token_hex(32)
 
 APP.url_map.strict_slashes = False
 APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get('pretty_print', False)
