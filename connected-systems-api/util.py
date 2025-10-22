@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Self, Union, Tuple, Optional, List
 
 from pygeoapi import l10n
-from pygeoapi.api import APIRequest, SYSTEM_LOCALE
+from pygeoapi.api import APIRequest, SYSTEM_LOCALE, FORMAT_TYPES
 from quart import make_response, Quart, Request
 from werkzeug.datastructures import MultiDict
 
@@ -80,11 +80,9 @@ class AsyncAPIRequest(APIRequest):
         return api_req
 
     def is_valid(self, allowed_formats: Optional[list[str]] = None) -> bool:
-        if not self._format:
+        if self._format in FORMAT_TYPES.values():
             return True
-        if self._format in (f.lower() for f in (allowed_formats or ())):
-            return True
-        return False
+        return super().is_valid(additional_formats=allowed_formats)
 
     def _get_format(self, headers) -> Union[str, None]:
         if f := super()._get_format(headers):
