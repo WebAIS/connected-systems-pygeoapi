@@ -239,19 +239,19 @@ class ConnectedSystemsESProvider(ConnectedSystemsPart1Provider, ElasticsearchCon
     async def query_collection_items(self, collection_id: str, parameters: CSAParams) -> CSAGetResponse:
         if collection_id == "all_systems":
             query = System.search()
-            parameters.format = MimeType.F_GEOJSON.value
+            # parameters.format = MimeType.F_GEOJSON.value
         elif collection_id == "all_procedures":
             query = Procedure.search()
-            parameters.format = MimeType.F_GEOJSON.value
+            # parameters.format = MimeType.F_GEOJSON.value
         elif collection_id == "all_fois":
             query = SamplingFeature.search()
-            parameters.format = MimeType.F_GEOJSON.value
+            # parameters.format = MimeType.F_GEOJSON.value
         elif collection_id == "all_deployments":
             query = Deployment.search()
-            parameters.format = MimeType.F_GEOJSON.value
+            # parameters.format = MimeType.F_GEOJSON.value
         elif collection_id == "all_datastreams":
             query = Datastream.search()
-            parameters.format = MimeType.F_JSON.value
+            # parameters.format = MimeType.F_JSON.value
         else:
             return None
 
