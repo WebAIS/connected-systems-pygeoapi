@@ -1,0 +1,46 @@
+[project]
+name = "connected-systems-pygeoapi"
+version = "0.6.0"
+description = "Implementation of the OGC API Connected Systems based on the pygeoapi project"
+readme = "README.md"
+requires-python = "==3.12.12"
+dependencies = [
+    "aiohttp>=3.13.1",
+    "asyncpg>=0.30.0",
+    "babel>=2.17.0",
+    "elasticsearch>=8.19.1",
+    "elasticsearch-dsl~=8.18.0",
+    "filelock>=3.20.0",
+    "hypercorn[uvloop]>=0.17.3",
+    "jsonschema>=4.25.1",
+    "orjson>=3.11.3",
+    "pydantic>=2.12.3",
+    "pygeoapi",
+    "pygeofilter>=0.3.1",
+    "pyproj>=3.7.2",
+    "python-dateutil>=2.9.0.post0",
+    "pyyaml>=6.0.3",
+    "quart>=0.20.0",
+    "quart-auth>=0.11.0",
+    "quart-cors>=0.8.0",
+    "requests>=2.32.5",
+    "rtree>=1.4.1",
+    "setuptools>=80.9.0",
+    "shapely==2.0.6",
+    "tqdm>=4.67.1",
+    "urllib3>=2.5.0",
+    "numpy==2.2.4",
+    "shapely==2.6.0"
+]
+
+[tool.uv.sources]
+pygeoapi = { git = "https://github.com/52north/pygeoapi.git", rev = "ec1eb38d9a64d93ec9a2e1b9db6fea6dc05f194a" }
+
+
+[tool.uv]
+build-constraint-dependencies = ["numpy==2.2.4", "shapely==2.6.0"]
+
+override-dependencies = [
+    "numpy; sys_platform == 'never'",
+    "shapely; sys_platform == 'never'",
+]
