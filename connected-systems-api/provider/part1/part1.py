@@ -370,7 +370,7 @@ class ConnectedSystemsESProvider(ConnectedSystemsPart1Provider, ElasticsearchCon
                 async def link_procedure(mime: MimeType, _: Dict, entity: System) -> None:
                     typeOf = getattr(entity["raw"], "typeOf", None)
                     # TODO: check alias
-                    if typeOf and typeOf["rel"] == "ogc-rel:procedures":
+                    if typeOf and "rel" in typeOf and typeOf["rel"] == "ogc-rel:procedures":
                         href = typeOf["href"]
                         found = await Procedure().search().filter("term", uid=href).source(includes=["_id"]).execute()
                         if len(found.hits) != 1:
