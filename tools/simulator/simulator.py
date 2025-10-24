@@ -1,6 +1,7 @@
 import random
 import uuid
 from datetime import datetime as DateTime
+from time import sleep
 from typing import Dict
 
 import requests
@@ -180,8 +181,8 @@ def run():
     post(f"/systems/{system['id']}/datastreams", datastream)
 
     for _ in tqdm(range(num_of_obs_to_insert)):
-        post(f"/datastreams/{datastream['id']}/observations", gen_observation(datastream['id']), "application/om+json")
-        # sleep(100 / 1000)
+        post(f"/datastreams/{datastream['id']}/observations", gen_observation(datastream['id']), "application/json")
+        sleep(100 / 1000)
 
 
 if __name__ == "__main__":
