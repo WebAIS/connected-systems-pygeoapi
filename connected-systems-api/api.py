@@ -321,7 +321,7 @@ class CSAPI(CSMeta):
         # Expand parameters with additional information based on path
         if path is not None:
             # Check that id is not malformed.
-            if not re.match("^[\\w-]+$", path[1]):
+            if not re.match("^[.\\w-]+$", path[1]):
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST,
                     headers,
