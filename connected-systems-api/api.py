@@ -229,6 +229,7 @@ class CSAPI(CSMeta):
 
             parameters = parse_query_parameters(CollectionParams(), request_params,
                                                 self.base_url + "/" + request.path_info)
+            parameters.format = format
             headers["Content-Type"] = format
 
             if format == F_HTML:
