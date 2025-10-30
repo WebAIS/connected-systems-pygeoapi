@@ -254,7 +254,7 @@ class ConnectedSystemsESProvider(ConnectedSystemsPart1Provider, ElasticsearchCon
             # parameters.format = MimeType.F_GEOJSON.value
         elif collection_id == "all_datastreams":
             query = Datastream.search()
-            parameters.format = MimeType.F_JSON.value
+            parameters.format = "json"
             async def to_geojson(response: CSAGetResponse):
                 for item in response[0]:
                     item["type"] = "Feature"

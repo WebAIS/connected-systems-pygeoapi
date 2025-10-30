@@ -182,7 +182,7 @@ class CSAPI(CSMeta):
 
             parameters = parse_query_parameters(CollectionParams(), request.params,
                                                 self.base_url + "/" + request.path_info)
-            parameters.format = MimeType.F_JSON.value
+            parameters.format = "json"
             data = await self.provider_part1.query_collections(parameters)
         except ProviderItemNotFoundError:
             # element was not found in resources nor dynamic-resources, return 404
@@ -229,11 +229,11 @@ class CSAPI(CSMeta):
 
             parameters = parse_query_parameters(CollectionParams(), request_params,
                                                 self.base_url + "/" + request.path_info)
-            parameters.format = format
-            headers["Content-Type"] = format
+            if format:
+                parameters.format = format
 
-            if format == F_HTML:
-                parameters.format = MimeType.F_SMLJSON.value
+            if format == F_HTML or format is None:
+                parameters.format = "smljson"
                 data = await self.provider_part1.query_collection_items(collection_id, parameters)
                 path = os.path.join(os.path.dirname(__file__), "templates/connected-systems/collectionitems.html")
                 # data[0][0]["pretty"] = orjson.dumps(data, option=orjson.OPT_INDENT_2)
@@ -269,43 +269,43 @@ class CSAPI(CSMeta):
             case EntityType.SYSTEMS:
                 handler = self.provider_part1.query_systems
                 params = SystemsParams()
-                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON])
+                allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]]
                 default_mimetype = MimeType.F_SMLJSON
             case EntityType.DEPLOYMENTS:
                 handler = self.provider_part1.query_deployments
                 params = DeploymentsParams()
-                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON])
+                allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]]
                 default_mimetype = MimeType.F_SMLJSON
             case EntityType.PROCEDURES:
                 handler = self.provider_part1.query_procedures
                 params = ProceduresParams()
-                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON])
+                allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]]
                 default_mimetype = MimeType.F_SMLJSON
             case EntityType.SAMPLING_FEATURES:
                 handler = self.provider_part1.query_sampling_features
                 params = SamplingFeaturesParams()
-                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_GEOJSON])
+                allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_GEOJSON]]
                 default_mimetype = MimeType.F_GEOJSON
             case EntityType.PROPERTIES:
                 handler = self.provider_part1.query_properties
                 params = CSAParams()
-                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON])
+                allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON]]
                 default_mimetype = MimeType.F_SMLJSON
             case EntityType.DATASTREAMS:
                 handler = self.provider_part2.query_datastreams
                 params = DatastreamsParams()
-                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_JSON])
+                allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_JSON]]
                 default_mimetype = MimeType.F_JSON
             case EntityType.DATASTREAMS_SCHEMA:
                 handler = self.provider_part2.query_datastreams
                 params = DatastreamsParams()
                 params.schema = True
-                allowed_mimetypes = (m.value for m in [MimeType.F_JSON])
+                allowed_mimetypes = [m.value for m in [MimeType.F_JSON]]
                 default_mimetype = MimeType.F_JSON
             case EntityType.OBSERVATIONS:
                 handler = self.provider_part2.query_observations
                 params = ObservationsParams()
-                allowed_mimetypes = (m.value for m in [MimeType.F_HTML, MimeType.F_JSON, MimeType.F_OMJSON])
+                allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_JSON, MimeType.F_OMJSON]]
                 default_mimetype = MimeType.F_JSON
 
         # Check if mime_type is allowed
@@ -315,7 +315,7 @@ class CSAPI(CSMeta):
                 {},
                 request.format,
                 'InvalidMimetype',
-                f"invalid mimetype supplied! expected {[f.value for f in allowed_mimetypes]} got '{request.format}'")
+                f"invalid mimetype supplied! expected {allowed_mimetypes} got '{request.format}'")
 
         headers = request.get_response_headers(**self.api_headers, default_type=default_mimetype.value, force_type=request.format)
         collection = True
@@ -540,7 +540,7 @@ class CSAPI(CSMeta):
         if data is None:
             return headers, HTTPStatus.NOT_FOUND, ""
         match request.format:
-            case (MimeType.F_JSON.value | MimeType.F_GEOJSON.value):
+            case ("json" | "geojson"):
                 response = {
                     "type": "FeatureCollection",
                     "features": [item for item in data[0]],

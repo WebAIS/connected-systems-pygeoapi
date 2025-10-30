@@ -122,19 +122,7 @@ class ElasticsearchConnector:
                      query: AsyncSearch,
                      parameters: CSAParams) -> CSAGetResponse:
         # Select appropriate strategy here: For collections >10k elements search_after must be used
-        match parameters.format:
-            case MimeType.F_SMLJSON.value:
-                f = "sml"
-            case MimeType.F_GEOJSON.value:
-                f = "geojson"
-            case MimeType.F_JSON.value:
-                f = "json"
-            case "json":
-                f = "json"
-            case _:
-                raise Exception(f"unrecognized Format {parameters.format}")
-
-        found = (await query.source(f)[parameters.offset:parameters.offset + parameters.limit].execute()).hits
+        found = (await query.source(parameters.format)[parameters.offset:parameters.offset + parameters.limit].execute()).hits
 
         count = found.total.value
         if count > 0:
@@ -149,7 +137,7 @@ class ElasticsearchConnector:
             LOGGER.error("Add alternative encodings as links here!")
 
             try:
-                return [getattr(x._source, f).to_dict() for x in found.hits], links
+                return [getattr(x._source, parameters.format).to_dict() for x in found.hits], links
             except Exception as e:
                 LOGGER.error(e)
                 return [], []

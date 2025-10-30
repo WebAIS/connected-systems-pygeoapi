@@ -26,7 +26,6 @@ async def all_collections(collection_id: str = None):
     """
 
     req = await AsyncAPIRequest.from_request(request)
-    format = req._get_format(request.headers)
 
     if collection_id:
         if collection_id in filter_dict_by_key_value(CONFIG['resources'], 'type', 'collection'):
@@ -34,20 +33,17 @@ async def all_collections(collection_id: str = None):
             response = core_api.describe_collections(api_, req, collection_id)
         else:
             # The collection is dynamic via csapi
-            print(f"HEERE {format}")
             response = await csapi_.get_collections(request,
                                                     ({}, HTTPStatus.NOT_FOUND, ""),
-                                                    format,
+                                                    req.format,
                                                     collection_id)
     else:
         # Overwrite original request format with json so we can modify response later on and add CSAPI-entities
-
         request.args['f'] = "json"
         response = core_api.describe_collections(api_, await AsyncAPIRequest.from_request(request))
 
         # Add CSAPI-Collections to response
-        print(f"original format {format}")
-        response = await csapi_.get_collections(request, response, format)
+        response = await csapi_.get_collections(request, response, req.format)
 
     return await to_response(response)
 

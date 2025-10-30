@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Self, Union, Tuple, Optional, List
+from typing import Self, Union, Tuple, Optional, List, OrderedDict
 
 from pygeoapi import l10n
 from pygeoapi.api import APIRequest, SYSTEM_LOCALE, FORMAT_TYPES
@@ -68,7 +68,24 @@ class CustomQuart(Quart):
     metrics: AppState
 
 
+F_GEOJSON = 'geojson'
+F_SMLJSON = 'smljson'
+F_OMJSON = 'omjson'
+F_SWEJSON = 'swejson'
+
+
 class AsyncAPIRequest(APIRequest):
+    CSAFORMAT_TYPES = OrderedDict((
+        (F_GEOJSON, "application/geo+json"),
+        (F_SMLJSON, "application/sml+json"),
+        (F_OMJSON, "application/om+json"),
+        (F_SWEJSON, "application/swe+json"),
+        ("application/geo+json", "application/geo+json"),
+        ("application/sml+json", "application/sml+json"),
+        ("application/om+json", "application/om+json"),
+        ("application/swe+json", "application/swe+json")
+    )) | FORMAT_TYPES
+
     @classmethod
     async def from_request(cls, request: Union[ModifiableRequest, Request], supported_locales=None) -> Self:
         if supported_locales is None:
@@ -80,24 +97,42 @@ class AsyncAPIRequest(APIRequest):
         return api_req
 
     def is_valid(self, allowed_formats: Optional[list[str]] = None) -> bool:
-        if self._format in FORMAT_TYPES.values():
+        if self._format in self.CSAFORMAT_TYPES.keys():
             return True
         return super().is_valid(additional_formats=allowed_formats)
 
     def _get_format(self, headers) -> Union[str, None]:
-        if f := super()._get_format(headers):
-            return "application/json" if f == "json" else f
-        else:
-            h = headers.get('accept', headers.get('Accept', '')).strip()  # noqa
-            return h if h in MimeType.values() else None
+        # Optional f=html or f=json query param
+        # Overrides Accept header and might differ from FORMAT_TYPES
+        format_ = (self._args.get('f') or '').strip()
+        if format_:
+            # We also allow specifying the full type (e.g. f=application/json)
+            if format_.startswith("application/"):
+                return format_[12:].replace("+", "").replace(" ", "")
+            return format_
+
+        # Format not specified: get from Accept headers (MIME types)
+        # e.g. format_ = 'text/html'
+        h = headers.get('accept', headers.get('Accept', '')).strip()  # noqa
+        (fmts, mimes) = zip(*self.CSAFORMAT_TYPES.items())
+
+        # basic support for complex types (i.e. with "q=0.x")
+        for type_ in (t.split(';')[0].strip() for t in h.split(',') if t):
+            if type_ in mimes:
+                idx_ = mimes.index(type_)
+                format_ = fmts[idx_]
+                break
+
+        return format_ or None
 
     def get_response_headers(self, force_lang: l10n.Locale = None,
                              default_type: str = None,
                              force_type: str = None,
                              force_encoding: str = None,
                              **custom_headers) -> dict:
+        print("response headers")
         return {
-            'Content-Type': force_encoding if force_encoding else self._format if self._format else default_type,
+            'Content-Type': force_encoding if force_encoding else self.CSAFORMAT_TYPES[self._format] if self._format else default_type,
             # 'X-Powered-By': f'pygeoapi {__version__}',
         }
 
