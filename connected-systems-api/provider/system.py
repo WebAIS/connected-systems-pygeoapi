@@ -57,7 +57,7 @@ class System(CSDocument):
     parent = Keyword()
     geometry = GeoShape()
 
-    sml = Nested(SystemSML)
+    smljson = Nested(SystemSML)
     geojson = Nested(SystemGeoJson)
 
     class Index:
@@ -68,12 +68,16 @@ class System(CSDocument):
         if "id" not in self.raw:
             self.raw["id"] = self.id
 
+        if "parent" in self.raw:
+            self.parent = self.raw.parent
+            delattr(self.raw, "parent")
+
         if self.mime == MimeType.F_GEOJSON.value:
             self.geojson = SystemGeoJson(**self.raw)
-            self.sml = system_to_sml(self.raw)
+            self.smljson = system_to_sml(self.raw)
             self.geometry = self.raw["geometry"]
         elif self.mime == MimeType.F_SMLJSON.value:
-            self.sml = SystemSML(**self.raw)
+            self.smljson = SystemSML(**self.raw)
             self.geojson = system_to_geojson(self.raw.to_dict())
             self.geometry = getattr(self.raw, "position", None)
 

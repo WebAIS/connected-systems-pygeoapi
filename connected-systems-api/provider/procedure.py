@@ -29,7 +29,7 @@ class ProcedureGeoJson(InnerDoc):
 
 
 class Procedure(CSDocument):
-    sml = Nested(ProcedureSML)
+    smljson = Nested(ProcedureSML)
     geojson = Nested(ProcedureGeoJson)
 
     class Index:
@@ -43,9 +43,9 @@ class Procedure(CSDocument):
         if self.mime == MimeType.F_GEOJSON.value:
             LOGGER.warning("TODO: transcode Procedure GeoJSON -> SML")
             self.geojson = ProcedureGeoJson(**self.raw)
-            self.sml = {}
+            self.smljson = {}
         elif self.mime == MimeType.F_SMLJSON.value:
-            self.sml = ProcedureSML(**self.raw)
+            self.smljson = ProcedureSML(**self.raw)
             self.geojson = procedure_to_geojson(self.raw.to_dict())
 
         await super().save(**kwargs)

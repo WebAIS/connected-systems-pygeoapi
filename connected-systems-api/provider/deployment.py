@@ -45,7 +45,7 @@ class Deployment(CSDocument):
     linked_system_ids = Keyword()
     parent = Keyword()
     geometry = GeoShape()
-    sml = Nested(DeploymentSML)
+    smljson = Nested(DeploymentSML)
     geojson = Nested(DeploymentGeoJson)
 
     class Index:
@@ -59,11 +59,11 @@ class Deployment(CSDocument):
         if self.mime == MimeType.F_GEOJSON.value:
             LOGGER.error("TODO: transcoding for Deployment")
             self.geojson = DeploymentGeoJson(**self.raw)
-            self.sml = {}
+            self.smljson = {}
             self.geometry = getattr(self.raw, "geometry", None)
         elif self.mime == MimeType.F_SMLJSON.value:
             LOGGER.error("TODO: transcoding for Deployment")
-            self.sml = DeploymentSML(**self.raw)
+            self.smljson = DeploymentSML(**self.raw)
             self.geojson = deployment_to_geojson(self.raw.to_dict())
             self.geometry = getattr(self.raw, "location", None)
 

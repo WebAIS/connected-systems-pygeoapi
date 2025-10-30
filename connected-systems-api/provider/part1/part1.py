@@ -284,11 +284,11 @@ class ConnectedSystemsESProvider(ConnectedSystemsPart1Provider, ElasticsearchCon
         # By default, only top level systems are included (i.e. subsystems are ommitted)
         # unless query parameter 'parent' or 'id' is set
         if parameters.parent is not None:
-            query = query.filter("terms", _parent=parameters.parent)
+            query = query.filter("terms", parent=parameters.parent)
         else:
             # When requested as a collection
             if not parameters.id:
-                query = query.exclude("exists", field="_parent")
+                query = query.exclude("exists", field="parent")
 
         for key in ["procedure", "foi", "observedProperty", "controlledProperty"]:
             prop = parameters.__getattribute__(key)
