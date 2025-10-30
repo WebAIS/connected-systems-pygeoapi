@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 
 class ProcedureSML(InnerDoc):
     type: str = Keyword()
-    procedureType: str = Keyword()
+    definition: str = Keyword()
     id: str = Keyword()
     description = Text()
     uniqueId = Keyword()
@@ -62,7 +62,7 @@ def procedure_to_geojson(procedure: Dict) -> ProcedureGeoJson:
                           "uid": procedure.get("uniqueId"),
                           "name": procedure.get("label"),
                           "description": procedure.get("description"),
-                          "featureType": procedure.get("procedureType"),
+                          "featureType": procedure.get("definition"),
                           "validTime": procedure.get("validTime"),
                       } | {
                           ## Additional properties that are not defined but may be available. Only returned if defined in source
