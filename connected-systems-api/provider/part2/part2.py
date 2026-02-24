@@ -10,7 +10,7 @@ from elasticsearch.dsl import async_connections
 from pygeoapi.provider.base import ProviderGenericError, ProviderItemNotFoundError, ProviderInvalidQueryError
 
 from .formats.om_json_scalar import OMJsonSchemaParser
-from .util import TimescaleDbConfig, ObservationQuery, Observation
+from .util import TimescaleDbConfig, ObservationQuery, Observation, SORT_ORDER, ORDER_BY
 from .. import es_conn_part2
 from ..datastream import Datastream
 from ..definitions import *
@@ -420,6 +420,9 @@ class ConnectedSystemsTimescaleDBProvider(ConnectedSystemsPart2Provider, Elastic
         q = ObservationQuery()
         q.with_limit(parameters.limit)
 
+        #default order by result time
+        q.with_sort(order=SORT_ORDER.ASCENDING, order_by= ORDER_BY.RESULTTIME)
+
         if parameters.id:
             q.with_id(parameters.id)
         if parameters.offset:
@@ -431,10 +434,15 @@ class ConnectedSystemsTimescaleDBProvider(ConnectedSystemsPart2Provider, Elastic
         if parameters.datastream:
             q.with_datastream(parameters.datastream)
 
+        #only if filtered by phenomenon time (and no result time filter) order by phenomenon time
+        if parameters._phenomenonTime and not parameters._resultTime:
+            q.with_sort(order=SORT_ORDER.ASCENDING, order_by=ORDER_BY.PHENOMENONTIME)
+
         async with self._pool.acquire() as connection:
             LOGGER.debug("SELECT * FROM observations " + q.to_sql())
             LOGGER.debug(f"{q.parameters}")
-            return await connection.fetch("SELECT * FROM observations " + q.to_sql(), *q.parameters)
+            query = "SELECT * FROM observations " + q.to_sql()
+            return await connection.fetch(query, *q.parameters)
 
     async def _delete_observation(self, identifier: str):
         q = ObservationQuery()

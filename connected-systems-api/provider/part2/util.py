@@ -36,7 +36,15 @@ class TimescaleDbConfig:
 
     def connection_string(self) -> str:
         return f"postgres://{self.user}:{self.password}@{self.hostname}:{self.port}/{self.dbname}"
+    
 
+class SORT_ORDER(Enum):
+    DESCENDING = "DESC"
+    ASCENDING = "ASC"
+
+class ORDER_BY(Enum):
+    RESULTTIME = "resulttime"
+    PHENOMENONTIME = "phenomenontime"
 
 class SchemaParser:
     """
@@ -64,6 +72,8 @@ class ObservationQuery:
         self.parameters = []
         self.limit = 10
         self.offset = 0
+        self.order = "ASC"
+        self.order_by = "resulttime"
 
     def with_id(self, ids: List[str]) -> Self:
         return self._in("uuid", ids)
@@ -100,7 +110,21 @@ class ObservationQuery:
         if time[1] is not None:
             self.clauses.append(f"{key}<=${len(self.clauses) + 1}")
             self.parameters.append(time[1])
+
         return self
+    
+    def with_sort(self, order: SORT_ORDER, order_by: ORDER_BY):
+        if order == SORT_ORDER.ASCENDING:
+            self.order = "ASC"
+        else:
+            self.order = "DESC"
+        
+        if order_by == ORDER_BY.RESULTTIME:
+            self.order_by = "resulttime"
+        else:
+            self.order_by = "phenomenontime"
+
+        
 
     def to_sql(self, with_paging: bool = True) -> str:
         stub = ""
@@ -109,6 +133,9 @@ class ObservationQuery:
             # first clause
             stub = "WHERE "
             stub += " AND ".join(self.clauses)
+
+        if self.order and self.order_by:
+            stub += f" ORDER BY {self.order_by} {self.order}"
 
         if with_paging:
             stub += f" LIMIT {self.limit}"
