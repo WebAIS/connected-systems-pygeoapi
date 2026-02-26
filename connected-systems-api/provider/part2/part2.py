@@ -419,9 +419,7 @@ class ConnectedSystemsTimescaleDBProvider(ConnectedSystemsPart2Provider, Elastic
     async def _get_observations(self, parameters: ObservationsParams) -> list:
         q = ObservationQuery()
         q.with_limit(parameters.limit)
-
-        #default order by result time
-        q.with_sort(order=SORT_ORDER.ASCENDING, order_by= ORDER_BY.RESULTTIME)
+        q.with_sort(order=SORT_ORDER.ASCENDING, order_by= ORDER_BY.PHENOMENONTIME) #always sorted by phenomenon time
 
         if parameters.id:
             q.with_id(parameters.id)
@@ -434,9 +432,6 @@ class ConnectedSystemsTimescaleDBProvider(ConnectedSystemsPart2Provider, Elastic
         if parameters.datastream:
             q.with_datastream(parameters.datastream)
 
-        #only if filtered by phenomenon time (and no result time filter) order by phenomenon time
-        if parameters._phenomenonTime and not parameters._resultTime:
-            q.with_sort(order=SORT_ORDER.ASCENDING, order_by=ORDER_BY.PHENOMENONTIME)
 
         async with self._pool.acquire() as connection:
             LOGGER.debug("SELECT * FROM observations " + q.to_sql())
