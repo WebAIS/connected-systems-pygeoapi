@@ -139,7 +139,7 @@ class ConnectedSystemsTimescaleDBProvider(ConnectedSystemsPart2Provider, Elastic
                                    UPDATE datastreams SET
                                    resulttime_start=LEAST(resulttime_start, NEW.resulttime),
                                    resulttime_end=GREATEST(resulttime_start, NEW.resulttime),
-                                   phenomenontime_start=GREATEST(phenomenontime_start, NEW.phenomenontime),
+                                   phenomenontime_start=LEAST(phenomenontime_start, NEW.phenomenontime),
                                    phenomenontime_end=GREATEST(phenomenontime_start, NEW.phenomenontime)
                                    WHERE id=NEW.datastream_id;
                                    RETURN NULL;
