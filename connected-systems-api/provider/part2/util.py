@@ -1,6 +1,6 @@
 import logging
 from dataclasses import field
-from typing import Self
+from typing import Self, Dict, List, Optional
 
 from ..definitions import *
 
@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 class Observation:
     datastream_id: str  # id of the associated datastream
     resultTime: DateTime
-    result: bytes  # raw result data
+    result: Dict[str, any]  # raw result data
 
     id: Optional[str] = None  # unique identifier
     sampling_feature_id: Optional[str] = None

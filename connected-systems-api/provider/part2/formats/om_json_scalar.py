@@ -12,7 +12,7 @@ class OMJsonSchemaParser(SchemaParser):
         return Observation(
             datastream_id=data["datastream"],
             resultTime=DateTime.fromisoformat(data["resultTime"]),
-            result=orjson.dumps(data["result"]),
+            result=orjson.dumps(data["result"]).decode("utf-8"),
         )
 
     def encode(self, obs: asyncpg.Record) -> any:
