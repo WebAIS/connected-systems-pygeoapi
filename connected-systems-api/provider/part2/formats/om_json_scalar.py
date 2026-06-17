@@ -12,7 +12,7 @@ class OMJsonSchemaParser(SchemaParser):
         obs = Observation(
             datastream_id=data["datastream"],
             resultTime=DateTime.fromisoformat(data["resultTime"]),
-            result=orjson.dumps(data["result"]),
+            result=orjson.dumps(data["result"]).decode("utf-8"),
         )
         #if not provided phenomenon time equals result time by default
         obs.phenomenonTime = DateTime.fromisoformat(data["phenomenonTime"]) if "phenomenonTime" in data else obs.resultTime

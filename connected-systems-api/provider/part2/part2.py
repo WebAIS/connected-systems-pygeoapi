@@ -109,7 +109,7 @@ class ConnectedSystemsTimescaleDBProvider(ConnectedSystemsPart2Provider, Elastic
                                                                 resulttime TIMESTAMPTZ NOT NULL,
                                                                 phenomenontime TIMESTAMPTZ,
                                                                 datastream_id text NOT NULL,
-                                                                result BYTEA NOT NULL,
+                                                                result JSONB NOT NULL,
                                                                 sampling_feature_id text,
                                                                 procedure_link text,
                                                                 parameters text
