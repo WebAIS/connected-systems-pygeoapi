@@ -16,7 +16,6 @@
 import os
 import pathlib
 from http import HTTPMethod
-from xmlrpc.client import boolean
 
 import jsonschema
 import orjson
@@ -266,38 +265,40 @@ class CSAPI(CSMeta):
 
         allowed_mimetypes = []
         default_mimetype: MimeType = None
-        json_fallback_format: MimeType = None
+        # Concrete encoding that a generic 'json'/'application/json' request falls
+        # back to for feature resources (set per entity below); None = no fallback.
+        json_fallback_format: str = None
         match collection:
             case EntityType.SYSTEMS:
                 handler = self.provider_part1.query_systems
                 params = SystemsParams()
                 allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]]
                 default_mimetype = MimeType.F_SMLJSON
-                json_fallback_format = default_mimetype
+                json_fallback_format = F_SMLJSON
             case EntityType.DEPLOYMENTS:
                 handler = self.provider_part1.query_deployments
                 params = DeploymentsParams()
                 allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]]
                 default_mimetype = MimeType.F_SMLJSON
-                json_fallback_format = default_mimetype
+                json_fallback_format = F_SMLJSON
             case EntityType.PROCEDURES:
                 handler = self.provider_part1.query_procedures
                 params = ProceduresParams()
                 allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON, MimeType.F_GEOJSON]]
                 default_mimetype = MimeType.F_SMLJSON
-                json_fallback_format = default_mimetype
+                json_fallback_format = F_SMLJSON
             case EntityType.SAMPLING_FEATURES:
                 handler = self.provider_part1.query_sampling_features
                 params = SamplingFeaturesParams()
                 allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_GEOJSON]]
                 default_mimetype = MimeType.F_GEOJSON
-                json_fallback_format = default_mimetype
+                json_fallback_format = F_GEOJSON
             case EntityType.PROPERTIES:
                 handler = self.provider_part1.query_properties
                 params = CSAParams()
                 allowed_mimetypes = [m.value for m in [MimeType.F_HTML, MimeType.F_SMLJSON]]
                 default_mimetype = MimeType.F_SMLJSON
-                json_fallback_format = default_mimetype
+                json_fallback_format = F_SMLJSON
             case EntityType.DATASTREAMS:
                 handler = self.provider_part2.query_datastreams
                 params = DatastreamsParams()
@@ -351,12 +352,14 @@ class CSAPI(CSMeta):
             parameters = parse_query_parameters(params, request.params, self.base_url + "/" + request.path_info)
             parameters.format = request.format if request.format is not None else default_mimetype.value
 
-            # CSA (Part 1) spec does not specify plain application/json response encoding (just geojson or smljson) for Part 1 features. Use a fallback if application/json (or json) is requested, .
-            # If fallback for json is used make sure response header reflects the correct fallback Mime type
-            use_json_fallback_format: boolean = parameters.format in ("json", MimeType.F_JSON.value) and json_fallback_format is not None
-            if use_json_fallback_format:
-                parameters.format = json_fallback_format.value
-                headers["Content-Type"] = json_fallback_format.value
+            # 'json'/'application/json' is not a defined encoding for feature resources
+            # (OGC 23-001 Clause 19 defines only GeoJSON and SensorML-JSON). Fall back to
+            # the preferred concrete encoding and report its real media type so the
+            # Content-Type matches the body that is actually returned.
+            use_json_fallback = json_fallback_format and parameters.format in ("json", MimeType.F_JSON.value)
+            if use_json_fallback:
+                parameters.format = json_fallback_format
+                headers["Content-Type"] = request.CSAFORMAT_TYPES[json_fallback_format]
 
             data = await handler(parameters)
 
