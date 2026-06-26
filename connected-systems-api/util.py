@@ -128,11 +128,10 @@ class AsyncAPIRequest(APIRequest):
     def get_response_headers(self, force_lang: l10n.Locale = None,
                              default_type: str = None,
                              force_type: str = None,
-                             force_encoding: str = None,
                              **custom_headers) -> dict:
         print("response headers")
         return {
-            'Content-Type': force_encoding if force_encoding else self.CSAFORMAT_TYPES[self._format] if self._format else default_type,
+            'Content-Type': force_type if force_type else self.CSAFORMAT_TYPES[self._format] if self._format else default_type,
             # 'X-Powered-By': f'pygeoapi {__version__}',
         }
 
