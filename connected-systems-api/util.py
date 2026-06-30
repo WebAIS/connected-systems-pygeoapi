@@ -129,11 +129,19 @@ class AsyncAPIRequest(APIRequest):
                              default_type: str = None,
                              force_type: str = None,
                              **custom_headers) -> dict:
-        print("response headers")
-        return {
-            'Content-Type': force_type if force_type else self.CSAFORMAT_TYPES[self._format] if self._format else default_type,
+        
+        content_type = self.CSAFORMAT_TYPES[default_type] if default_type and default_type in self.CSAFORMAT_TYPES else None
+        if force_type and force_type in self.CSAFORMAT_TYPES:
+            content_type = self.CSAFORMAT_TYPES[force_type]
+        elif self._format and self._format in self.CSAFORMAT_TYPES:
+            content_type = self.CSAFORMAT_TYPES[self._format]
+
+        response_headers = {
+            'Content-Type': content_type,
             # 'X-Powered-By': f'pygeoapi {__version__}',
         }
+        print(f"response_headers: {response_headers}")
+        return response_headers
 
 
 def parse_request(func):
