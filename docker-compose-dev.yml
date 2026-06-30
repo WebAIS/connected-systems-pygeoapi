@@ -15,7 +15,7 @@ networks:
     external: false
 
 services:
-  connected-systems-api:
+  #connected-systems-api:
   #  connected-systems-api:
   #    image: 52north/connected-systems-pygeoapi:local
   #    build:
