@@ -1,70 +1,84 @@
 # connected-systems-pygeoapi
 
-Proof of Concept of the OGC Connected Systems API based on pygeoapi
+Proof of Concept of the OGC API Connected Systems based on pygeoapi.
 
-## Installation
+The implementation is split across two backends:
 
-### Docker
+- **Part 1** (systems, deployments, procedures, ...) is served from **Elasticsearch**.
+- **Part 2** (datastreams, observations, ...) is served from **TimescaleDB**.
 
-Example Setups for each backend are provided in the respective subfolder in the `./docker/` subdirectory.
+## Local Development
 
-Build appropriate docker container (choose either target)
+For local development the supporting backends run in Docker while the application itself runs
+on the host, so it can be debugged directly.
 
-```commandline
-docker compose build connected-systems-api
-```
-
-Note: When building manually make sure to specify the `target` as either `hybrid` or `toardb`.
+### 1. Start the backends
 
 ```commandline
-docker build --target=<hybrid|toardb> .
+cp .env.sample .env
+docker compose -f docker-compose-dev.yml up -d
 ```
 
-### Local/Development Installation
+This brings up the supporting services and forwards their ports to the host:
 
-The specific installation instructions depend on the actual backend to be used, as each backend may require additional dependencies.
+| Service       | Port   |
+| ------------- | ------ |
+| TimescaleDB   | `5433` |
+| Elasticsearch | `9200` |
+| Kibana        | `5601` |
+| pgAdmin       | `5050` |
 
-Installation of requirements:
+The application container is intentionally commented out in `docker-compose-dev.yml` so it can
+be run and debugged on the host (see below).
+
+### 2. Install Python dependencies
+
+Dependencies are managed with [`uv`](https://docs.astral.sh/uv/). Python is pinned to `3.12.12`
+via `.python-version`.
 
 ```commandline
-pip install -r requirements.txt
-pip install --no-deps -r requirements_nodeps.txt
-
-[if toardb backend is used]
-pip install -r requirements_toardb_csa.txt
-
-[if elasticsearch backend is used]
-pip install -r requirements_elasticsearch_csa.txt
+uv sync
 ```
 
-If additional providers are used, e.g. for serving a `STAC` interface in parallel to Connected-Systems, additional
-dependencies may be necessary depending on the used underlying provider.
-
-The application can then be started from the root directory via
+### 3. Run the application
 
 ```commandline
-python3 connected-systems-api/app.py 
+uv run connected-systems-api/app.py
 ```
 
-### devcontainer
+This starts a debug server on `http://localhost:5000` with basic-auth test credentials
+(`test` / `test`).
 
-This repository contains [devcontainer](https://code.visualstudio.com/docs/devcontainers/containers) configurations.
-Before using them, the `docker/examples/hybrid-csa/.env-sample` or any other working `.env` MUST be provided by copying it to the `.devcontainer/` folder.
+### Configuration
 
-Remember to rebuild the containers, if any other example set-up from `docker/examples` was executed beforehand.
+Defaults are read from [`connected-systems-api/default-config.yml`](connected-systems-api/default-config.yml)
+and can be overridden with `CSA_*` environment variables. The backend defaults from
+`docker-compose-dev.yml` (hosts, ports, passwords) already match the default config, so no extra
+configuration is required for a standard local setup.
 
-### Example Data
+## Docker
 
-You can insert example data into your running instance (`url_stub`) by using the [simulator](./tools/simulator/simulator.py).
-Ensure to set-up your python environment accordingly and install the [required dependencies](./tools/simulator/requirements.txt) in your simulator env.
-You can limit the amount of observations (`num_of_obs_to_insert`) being inserted in the `simlutor.py`
+Build the production image:
+
+```commandline
+docker build -t connected-systems-pygeoapi .
+```
+
+The container serves the API via [`hypercorn`](hypercorn.conf.py) on port `5000`.
+
+## Example Data
+
+You can insert example data into a running instance using the
+[simulator](./tools/simulator/simulator.py). Set up a separate Python environment for it and
+install its [dependencies](./tools/simulator/requirements.txt). The number of observations to
+insert (`num_of_obs_to_insert`) can be adjusted inside `simulator.py`.
 
 ## Usage
 
-The API is accessible at `<host>:5000` and provides a HTML landing page for easy navigation.
+The API is accessible at `<host>:5000` and provides an HTML landing page for easy navigation.
 
 ## License
 
-The software is licensed under the `Apache 2.0 License`. See [LICENSE.md](LICENSE.md) for details.
+The software is licensed under the `Apache 2.0 License`. See [LICENSE](LICENSE) for details.
 
 ## Contributors
