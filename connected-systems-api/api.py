@@ -352,10 +352,9 @@ class CSAPI(CSMeta):
             parameters = parse_query_parameters(params, request.params, self.base_url + "/" + request.path_info)
             parameters.format = request.format if request.format is not None else default_mimetype
 
-            # 'json'/'application/json' is not a defined encoding for feature resources
-            # (OGC 23-001 Clause 19 defines only GeoJSON and SensorML-JSON). Fall back to
-            # the preferred concrete encoding and report its real media type so the
-            # Content-Type matches the body that is actually returned.
+            # 'json'/'application/json' is not a explicitly defined encoding for CSA Part 1 objects
+            # fallback to preferred concrete encoding and report its real media type so the
+            # Content-Type response header matches the body that is actually returned.
             use_json_fallback = json_fallback_format and parameters.format in (F_JSON, MimeType.F_JSON.value)
             if use_json_fallback:
                 parameters.format = json_fallback_format
